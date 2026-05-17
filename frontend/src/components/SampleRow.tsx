@@ -3,6 +3,7 @@ import { Sample } from '../api'
 import { recordPlay } from '../api'
 import TagPill from './TagPill'
 import WaveformPlaceholder from './WaveformPlaceholder'
+import { useAudioManager } from './AudioManager'
 
 // ── Module-level styles ─────────────────────────────────────────────
 
@@ -57,6 +58,8 @@ interface SampleRowProps {
   onToggle: () => void
   onUserTagAdd?: (tag: string) => void
   onUserTagRemove?: (tag: string) => void
+  onStarToggle?: (rating: number) => void
+  onDelete?: () => void
   daysSincePlayed?: number | null
 }
 
@@ -66,10 +69,13 @@ export default function SampleRow({
   onToggle,
   onUserTagAdd,
   onUserTagRemove,
+  onStarToggle,
+  onDelete,
   daysSincePlayed,
 }: SampleRowProps) {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const { play: registerPlay } = useAudioManager()
 
   const audioUrl = `/api/samples/${sample.id}/audio`
 
@@ -81,6 +87,8 @@ export default function SampleRow({
         setPlaying(false)
         return
       }
+      // Register with global audio manager — stops any other playing sample
+      registerPlay(audioRef.current)
       setPlaying(true)
       try {
         await recordPlay(sample.id)
@@ -105,8 +113,24 @@ export default function SampleRow({
     }
   }, [sample.id])
 
-  const handleCopyPath = () => {
-    navigator.clipboard.writeText(sample.path).catch(() => {})
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyPath = async () => {
+    try {
+      await navigator.clipboard.writeText(sample.path)
+    } catch {
+      // Fallback for non-secure contexts (HTTP)
+      const ta = document.createElement('textarea')
+      ta.value = sample.path
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
   }
 
   const duration = formatDuration(sample.duration_seconds)
@@ -199,27 +223,49 @@ export default function SampleRow({
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-          <button style={ICON_BTN} title="Drag to DAW" aria-label="Drag to DAW">
+          <button
+            style={ICON_BTN}
+            onClick={() => alert('Drag to DAW requires the desktop app (pywebview).\n\nUse Copy Path to copy the file location.')}
+            title="Drag to DAW (desktop only)"
+            aria-label="Drag to DAW (desktop only)"
+          >
             ⇥
           </button>
           <button
-            style={{ ...ICON_BTN, color: 'var(--accent)' }}
+            style={{ ...ICON_BTN, color: copied ? 'var(--success)' : 'var(--accent)' }}
             onClick={handleCopyPath}
-            title="Copy path"
+            title={copied ? 'Copied!' : 'Copy path'}
             aria-label={`Copy path for ${sample.filename}`}
           >
-            ⎘
+            {copied ? '✓' : '⎘'}
           </button>
-          <button
-            style={{
-              ...ICON_BTN,
-              color: sample.rating > 0 ? 'var(--warning)' : 'var(--text-dim)',
-            }}
-            title={sample.rating > 0 ? 'Starred' : 'Star'}
-            aria-label={sample.rating > 0 ? 'Remove star' : 'Add star'}
-          >
-            {sample.rating > 0 ? '★' : '☆'}
-          </button>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              style={{
+                ...ICON_BTN,
+                width: 20,
+                height: 28,
+                color: n <= sample.rating ? 'var(--warning)' : 'var(--text-dim)',
+                fontSize: 11,
+              }}
+              onClick={() => onStarToggle?.(n)}
+              title={`Rate ${n} star${n > 1 ? 's' : ''}`}
+              aria-label={`Rate ${n} star${n > 1 ? 's' : ''}`}
+            >
+              {n <= sample.rating ? '★' : '☆'}
+            </button>
+          ))}
+          {onDelete && (
+            <button
+              style={{ ...ICON_BTN, color: 'var(--danger)' }}
+              onClick={onDelete}
+              title="Delete sample"
+              aria-label={`Delete ${sample.filename}`}
+            >
+              🗑
+            </button>
+          )}
         </div>
       </div>
 

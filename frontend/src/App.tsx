@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react'
 import { Routes, Route, NavLink } from 'react-router-dom'
+import { AudioManagerProvider } from './components/AudioManager'
 import './App.css'
 
 const Search = lazy(() => import('./pages/Search'))
@@ -103,6 +104,7 @@ function App() {
       </nav>
 
       <main className="main-content">
+        <AudioManagerProvider>
         <ErrorBoundary>
           <Suspense fallback={<PageFallback />}>
             <Routes>
@@ -113,6 +115,7 @@ function App() {
             </Routes>
           </Suspense>
         </ErrorBoundary>
+        </AudioManagerProvider>
       </main>
     </div>
   )

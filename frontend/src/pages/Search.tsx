@@ -6,6 +6,7 @@ import {
   parseSearchQuery,
   searchSamples,
   updateSample,
+  deleteSample,
 } from '../api'
 import TagPill from '../components/TagPill'
 import SampleRow from '../components/SampleRow'
@@ -207,6 +208,24 @@ export default function Search() {
     await updateSample(sampleId, { user_tags: newTags })
   }
 
+  const handleStarToggle = async (sampleId: string, stars: number) => {
+    const sample = results.find((s) => s.id === sampleId)
+    if (!sample) return
+    // Clicking the same star again clears the rating
+    const newRating = sample.rating === stars ? 0 : stars
+    setResults((prev) =>
+      prev.map((s) => (s.id === sampleId ? { ...s, rating: newRating } : s)),
+    )
+    await updateSample(sampleId, { rating: newRating })
+  }
+
+  const handleDelete = async (sampleId: string) => {
+    if (!confirm(`Delete "${results.find((s) => s.id === sampleId)?.filename}"?`)) return
+    setResults((prev) => prev.filter((s) => s.id !== sampleId))
+    setTotal((t) => t - 1)
+    await deleteSample(sampleId)
+  }
+
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
   }
@@ -335,6 +354,8 @@ export default function Search() {
               onToggle={() => toggleExpand(sample.id)}
               onUserTagAdd={(tag) => handleUserTagAdd(sample.id, tag)}
               onUserTagRemove={(tag) => handleUserTagRemove(sample.id, tag)}
+              onStarToggle={(n) => handleStarToggle(sample.id, n)}
+              onDelete={() => handleDelete(sample.id)}
             />
           ))}
         </div>

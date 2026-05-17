@@ -10,6 +10,7 @@ import {
   getPacks,
   getQuickFilters,
   updateSample,
+  deleteSample,
 } from '../api'
 import SampleRow from '../components/SampleRow'
 
@@ -185,6 +186,23 @@ export default function Browse() {
     await updateSample(sampleId, { user_tags: newTags })
   }
 
+  const handleStarToggle = async (sampleId: string, stars: number) => {
+    const sample = results.find((s) => s.id === sampleId)
+    if (!sample) return
+    const newRating = sample.rating === stars ? 0 : stars
+    setResults((prev) =>
+      prev.map((s) => (s.id === sampleId ? { ...s, rating: newRating } : s)),
+    )
+    await updateSample(sampleId, { rating: newRating })
+  }
+
+  const handleDelete = async (sampleId: string) => {
+    if (!confirm(`Delete "${results.find((s) => s.id === sampleId)?.filename}"?`)) return
+    setResults((prev) => prev.filter((s) => s.id !== sampleId))
+    setTotal((t) => t - 1)
+    await deleteSample(sampleId)
+  }
+
   const breadcrumbParts = [
     activeQuick ? QUICK_FILTER_LABELS[activeQuick] : null,
     activePack ? `📦 ${activePack}` : null,
@@ -194,7 +212,7 @@ export default function Browse() {
 
   return (
     <div className="page">
-      <div style={{ display: 'flex', height: '100%' }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* ── Sidebar ─────────────────────────────────────────── */}
         <aside
           style={{
@@ -302,7 +320,7 @@ export default function Browse() {
         </aside>
 
         {/* ── Main content ─────────────────────────────────────── */}
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {/* Breadcrumb + sort */}
           <div
             style={{
@@ -421,6 +439,8 @@ export default function Browse() {
                     setExpandedId((prev) => (prev === sample.id ? null : sample.id))}
                   onUserTagAdd={(tag) => handleUserTagAdd(sample.id, tag)}
                   onUserTagRemove={(tag) => handleUserTagRemove(sample.id, tag)}
+                  onStarToggle={(n) => handleStarToggle(sample.id, n)}
+                  onDelete={() => handleDelete(sample.id)}
                   daysSincePlayed={computeDaysSince(sample.last_played_at)}
                 />
               ))}

@@ -142,6 +142,13 @@ async function put<T>(path: string, body: unknown): Promise<T> {
   })
 }
 
+async function patch<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
 // ── API functions ───────────────────────────────────────────────────
 
 export async function searchSamples(params: SearchParams): Promise<SearchResult> {
@@ -217,9 +224,17 @@ export function recordPlay(sampleId: string): Promise<void> {
 }
 
 export function updateSample(sampleId: string, data: Partial<Sample>): Promise<void> {
-  return put<void>(`/samples/${sampleId}`, data)
+  return patch<void>(`/samples/${sampleId}`, data)
 }
 
 export function startScan(): Promise<ScanStatus> {
   return post<ScanStatus>('/scan/start', {})
+}
+
+export async function deleteSample(sampleId: string): Promise<void> {
+  const res = await fetch(`${BASE}/samples/${sampleId}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`${res.status} ${res.statusText}: ${body}`)
+  }
 }

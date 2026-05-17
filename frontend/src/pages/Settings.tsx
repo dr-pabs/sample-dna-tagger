@@ -17,8 +17,8 @@ interface ProviderPreset {
 
 const PRESETS: ProviderPreset[] = [
   { label: 'Deepseek', base_url: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
-  { label: 'Kimi (Moonshot)', base_url: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
-  { label: 'OpenAI', base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+  { label: 'Kimi (Moonshot)', base_url: 'https://api.moonshot.ai/v1', model: 'moonshot-v1-8k' },
+  { label: 'OpenAI', base_url: 'https://api.openai.com/v1', model: 'gpt-4.1-mini' },
   { label: 'Ollama (local)', base_url: 'http://localhost:11434/v1', model: 'llama3.2' },
   { label: 'Custom', base_url: '', model: '' },
 ]
@@ -75,6 +75,19 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
 
   const [scanning, setScanning] = useState(false)
+  const [newFolderPath, setNewFolderPath] = useState('')
+
+  const handleAddFolder = async () => {
+    const path = newFolderPath.trim()
+    if (!path) return
+    await fetch('/api/scan/roots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    })
+    setNewFolderPath('')
+    window.location.reload()
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -108,21 +121,11 @@ export default function Settings() {
     }
   }
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await updateSettings({ provider, model, base_url: baseUrl, api_key: apiKey })
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Auto-save before test, then test
-  const handleTest = async () => {
+  // Save & test in one action
+  const handleSaveAndTest = async () => {
     setTestStatus('testing')
     setTestErrorMsg(null)
+    setSaving(true)
     try {
       await updateSettings({ provider, model, base_url: baseUrl, api_key: apiKey })
       const res = await testLLMConnection()
@@ -135,6 +138,8 @@ export default function Settings() {
     } catch (err) {
       setTestStatus('fail')
       setTestErrorMsg((err as Error).message)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -269,20 +274,46 @@ export default function Settings() {
                 ))}
               </div>
 
-              <button
-                style={{
-                  background: 'rgba(99,102,241,0.12)',
-                  border: '1px dashed rgba(99,102,241,0.4)',
-                  color: 'var(--text-secondary)',
-                  borderRadius: 8,
-                  padding: '8px 14px',
-                  cursor: 'pointer',
-                  fontSize: 11,
-                }}
-                aria-label="Add a watch folder"
-              >
-                + Add folder
-              </button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <Label htmlFor="new-folder-path">Folder path</Label>
+                  <input
+                    id="new-folder-path"
+                    type="text"
+                    value={newFolderPath}
+                    onChange={(e) => setNewFolderPath(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddFolder() }}
+                    placeholder="/Users/you/Samples"
+                    style={{
+                      width: '100%',
+                      background: 'var(--surface-1)',
+                      border: '1px solid #2d2d50',
+                      borderRadius: 6,
+                      padding: '7px 10px',
+                      color: 'var(--text-primary)',
+                      fontSize: 12,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={handleAddFolder}
+                  disabled={!newFolderPath.trim()}
+                  style={{
+                    background: newFolderPath.trim() ? 'var(--accent)' : 'rgba(99,102,241,0.12)',
+                    border: newFolderPath.trim() ? 'none' : '1px dashed rgba(99,102,241,0.4)',
+                    color: newFolderPath.trim() ? 'white' : 'var(--text-dim)',
+                    borderRadius: 6,
+                    padding: '7px 14px',
+                    cursor: newFolderPath.trim() ? 'pointer' : 'default',
+                    fontSize: 11,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Add
+                </button>
+              </div>
 
               {/* Scan status */}
               <div style={{ marginTop: 24 }}>
@@ -332,82 +363,93 @@ export default function Settings() {
               <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
                 AI provider
               </h2>
-              <p style={{ color: 'var(--text-dim)', fontSize: 11, marginBottom: 12 }}>
-                Any OpenAI-compatible endpoint. Deepseek, Kimi, Ollama, and OpenAI all work — paste the base URL and your key.
+              <p style={{ color: 'var(--text-dim)', fontSize: 11, marginBottom: 16 }}>
+                Choose a preset or enter custom endpoint details. Click "Save &amp; Test" to verify.
               </p>
 
+              {/* Current status */}
+              {testStatus === 'idle' && data?.api_key && (
+                <div style={{
+                  background: 'var(--surface-1)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 6,
+                  padding: '8px 12px',
+                  marginBottom: 16,
+                  fontSize: 11,
+                  color: 'var(--text-muted)',
+                }}>
+                  Currently: <strong style={{ color: 'var(--text-secondary)' }}>{data.provider || provider}</strong>
+                  {' → '}
+                  <span style={{ color: 'var(--text-dim)', fontFamily: 'monospace' }}>{data.model || model}</span>
+                  {data.base_url && <span style={{ color: 'var(--text-dim)' }}> @ {data.base_url}</span>}
+                </div>
+              )}
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {/* Provider preset + Model */}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <Label htmlFor="provider-preset">Provider preset</Label>
-                    <Select id="provider-preset" value={provider} onChange={(e) => handlePreset(e.target.value)}>
-                      {PRESETS.map((p) => (
-                        <option key={p.label} value={p.label}>{p.label}</option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <Label htmlFor="model-name">Model</Label>
-                    <Input id="model-name" value={model} onChange={(e) => setModel(e.target.value)} />
-                  </div>
+                {/* Provider preset */}
+                <div>
+                  <Label htmlFor="provider-preset">Provider</Label>
+                  <p style={{ color: 'var(--text-dim)', fontSize: 10, marginBottom: 6 }}>
+                    Select a preset to auto-fill Base URL and Model below.
+                  </p>
+                  <Select id="provider-preset" value={provider} onChange={(e) => handlePreset(e.target.value)}>
+                    {PRESETS.map((p) => (
+                      <option key={p.label} value={p.label}>{p.label}</option>
+                    ))}
+                  </Select>
+                </div>
+
+                {/* Model */}
+                <div>
+                  <Label htmlFor="model-name">Model name</Label>
+                  <Input id="model-name" value={model} onChange={(e) => setModel(e.target.value)} style={{ width: '100%' }} />
                 </div>
 
                 {/* Base URL */}
                 <div>
                   <Label htmlFor="base-url">Base URL</Label>
-                  <Input
-                    id="base-url"
-                    value={baseUrl}
-                    onChange={(e) => setBaseUrl(e.target.value)}
-                    style={{ width: '100%' }}
-                  />
+                  <Input id="base-url" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} style={{ width: '100%' }} />
                 </div>
 
                 {/* API Key */}
                 <div>
                   <Label htmlFor="api-key">API key</Label>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <Input
-                      id="api-key"
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      style={{ flex: 1 }}
-                    />
-                    <button
-                      onClick={handleTest}
-                      disabled={testStatus === 'testing'}
-                      style={{
-                        background: 'rgba(99,102,241,0.15)',
-                        border: '1px solid rgba(99,102,241,0.3)',
-                        color: 'var(--text-secondary)',
-                        borderRadius: 6,
-                        padding: '7px 12px',
-                        cursor: testStatus === 'testing' ? 'default' : 'pointer',
-                        fontSize: 11,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {testStatus === 'testing' ? 'Testing...' : 'Test connection'}
-                    </button>
-                  </div>
+                  <Input
+                    id="api-key"
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
                 </div>
+
+                {/* Save & Test button */}
+                <button
+                  onClick={handleSaveAndTest}
+                  disabled={testStatus === 'testing' || saving}
+                  style={{
+                    background: 'var(--accent)',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '10px 20px',
+                    color: 'white',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: (testStatus === 'testing' || saving) ? 'default' : 'pointer',
+                    opacity: (testStatus === 'testing' || saving) ? 0.6 : 1,
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  {testStatus === 'testing' ? '⏳ Testing...' : '💾 Save & Test Connection'}
+                </button>
 
                 {/* Test result */}
                 {testStatus === 'ok' && (
-                  <div
-                    role="status"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      background: '#0d2d1a',
-                      border: '1px solid #166534',
-                      borderRadius: 6,
-                      padding: '8px 12px',
-                    }}
-                  >
+                  <div role="status" style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: '#0d2d1a', border: '1px solid #166534',
+                    borderRadius: 6, padding: '8px 12px',
+                  }}>
                     <span style={{ color: 'var(--success)' }}>✓</span>
                     <span style={{ color: 'var(--success)', fontSize: 11 }}>
                       Connected — {model} responding
@@ -415,18 +457,11 @@ export default function Settings() {
                   </div>
                 )}
                 {testStatus === 'fail' && (
-                  <div
-                    role="alert"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      background: 'rgba(248,113,113,0.1)',
-                      border: '1px solid var(--danger)',
-                      borderRadius: 6,
-                      padding: '8px 12px',
-                    }}
-                  >
+                  <div role="alert" style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: 'rgba(248,113,113,0.1)', border: '1px solid var(--danger)',
+                    borderRadius: 6, padding: '8px 12px',
+                  }}>
                     <span style={{ color: 'var(--danger)' }}>✕</span>
                     <span style={{ color: 'var(--danger)', fontSize: 11 }}>
                       {testErrorMsg || 'Connection failed'}
@@ -434,25 +469,13 @@ export default function Settings() {
                   </div>
                 )}
 
-                {/* Save */}
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  style={{
-                    background: 'var(--accent)',
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '8px 16px',
-                    color: 'white',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: saving ? 'default' : 'pointer',
-                    opacity: saving ? 0.6 : 1,
-                    alignSelf: 'flex-start',
-                  }}
-                >
-                  {saving ? 'Saving...' : 'Save changes'}
-                </button>
+                {testStatus === 'idle' && !data?.api_key && (
+                  <div style={{
+                    color: 'var(--text-dim)', fontSize: 10, fontStyle: 'italic',
+                  }}>
+                    Enter your API key and click "Save &amp; Test" to verify the connection.
+                  </div>
+                )}
               </div>
             </div>
           )}
