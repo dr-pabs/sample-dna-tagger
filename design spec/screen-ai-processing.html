@@ -1,0 +1,40 @@
+<h2>Where does the AI analysis run?</h2>
+<p class="subtitle">This shapes the whole architecture — pick what fits your workflow and privacy needs.</p>
+
+<div class="options">
+  <div class="option" data-choice="local" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Fully Local</h3>
+      <p>Audio analysis runs on your machine using open-source models (Essentia, CLAP, ONNX). No internet required, no API costs, complete privacy — your samples never leave your drive. Slower first-run scan but instant after that. Works offline always.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Privacy — files stay local</li><li>No ongoing cost</li><li>Works offline</li><li>Faster repeated queries</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Heavier install (~500MB models)</li><li>Slower initial scan</li><li>Less flexible tagging vocabulary</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="cloud" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Cloud AI (OpenAI / Gemini)</h3>
+      <p>Audio is transcribed or fingerprinted locally, then described via an LLM API for rich semantic tagging. Richer language understanding — "liminal", "glacial", "anxious pulse" — beyond what local models produce. Requires internet and API key.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Richer, more expressive tags</li><li>Better natural language search</li><li>Lighter app install</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Samples sent to third party</li><li>API costs at scale</li><li>Requires internet</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid (Recommended)</h3>
+      <p>Local models handle the signal analysis — BPM, key, spectral energy, transient density, frequency range. An LLM then reads those structured numbers and generates expressive semantic tags. Only metadata goes to the cloud, never audio. Best of both.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Audio stays local</li><li>Rich descriptive tags from LLM</li><li>API cost is tiny (metadata only)</li><li>Works partially offline</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Needs API key for tagging</li><li>More moving parts</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

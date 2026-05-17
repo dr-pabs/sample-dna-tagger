@@ -1,0 +1,113 @@
+<h2>Main UI layout</h2>
+<p class="subtitle">How do you primarily find samples — search first, or browse first?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="search-first" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0f0f1a;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:#a5b4fc">
+        <div style="background:#1e1e3a;border:1px solid #3f3f6a;border-radius:6px;padding:8px 10px;margin-bottom:10px;color:#e2e8f0;font-size:12px">
+          🔍 high tension, no transients, mid-high range...
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="background:#161628;border:1px solid #2d2d50;border-radius:4px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#e2e8f0">pad_tension_01.wav</span>
+            <div style="display:flex;gap:4px">
+              <span style="background:#312e81;color:#a5b4fc;padding:2px 6px;border-radius:10px;font-size:10px">high tension</span>
+              <span style="background:#312e81;color:#a5b4fc;padding:2px 6px;border-radius:10px;font-size:10px">mid-high</span>
+            </div>
+          </div>
+          <div style="background:#161628;border:1px solid #2d2d50;border-radius:4px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#e2e8f0">drone_strings_dark.wav</span>
+            <div style="display:flex;gap:4px">
+              <span style="background:#312e81;color:#a5b4fc;padding:2px 6px;border-radius:10px;font-size:10px">tension</span>
+              <span style="background:#312e81;color:#a5b4fc;padding:2px 6px;border-radius:10px;font-size:10px">smooth</span>
+            </div>
+          </div>
+          <div style="background:#161628;border:1px solid #2d2d50;border-radius:4px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#e2e8f0">riser_filtered_bright.wav</span>
+            <div style="display:flex;gap:4px">
+              <span style="background:#312e81;color:#a5b4fc;padding:2px 6px;border-radius:10px;font-size:10px">high tension</span>
+              <span style="background:#312e81;color:#a5b4fc;padding:2px 6px;border-radius:10px;font-size:10px">mid-high</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Search First</h3>
+      <p>A prominent search bar dominates. Type natural language or tags, results appear instantly. No sidebar. Clean, fast, Spotlight-like. Best when you know roughly what you want.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="browser-filter" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0f0f1a;border-radius:8px;padding:10px;display:flex;gap:8px;font-size:10px;color:#a5b4fc">
+        <div style="width:38%;background:#12122a;border-radius:6px;padding:8px;border:1px solid #2d2d50">
+          <div style="color:#6366f1;font-size:9px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Filters</div>
+          <div style="margin-bottom:4px;color:#94a3b8">Energy</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">
+            <span style="background:#1e1e3a;border:1px solid #4f46e5;color:#a5b4fc;padding:2px 5px;border-radius:8px">high</span>
+            <span style="background:#1e1e3a;border:1px solid #2d2d50;color:#64748b;padding:2px 5px;border-radius:8px">mid</span>
+            <span style="background:#1e1e3a;border:1px solid #2d2d50;color:#64748b;padding:2px 5px;border-radius:8px">low</span>
+          </div>
+          <div style="margin-bottom:4px;color:#94a3b8">Texture</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">
+            <span style="background:#1e1e3a;border:1px solid #4f46e5;color:#a5b4fc;padding:2px 5px;border-radius:8px">smooth</span>
+            <span style="background:#1e1e3a;border:1px solid #2d2d50;color:#64748b;padding:2px 5px;border-radius:8px">gritty</span>
+          </div>
+          <div style="margin-bottom:4px;color:#94a3b8">Mood</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px">
+            <span style="background:#1e1e3a;border:1px solid #4f46e5;color:#a5b4fc;padding:2px 5px;border-radius:8px">tension</span>
+            <span style="background:#1e1e3a;border:1px solid #2d2d50;color:#64748b;padding:2px 5px;border-radius:8px">euphoric</span>
+          </div>
+        </div>
+        <div style="flex:1;background:#12122a;border-radius:6px;padding:8px;border:1px solid #2d2d50">
+          <div style="background:#0f0f1a;border:1px solid #2d2d50;border-radius:4px;padding:5px 7px;margin-bottom:6px;color:#e2e8f0;font-size:10px">🔍 Search...</div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="background:#0f0f1a;border:1px solid #2d2d50;border-radius:3px;padding:5px 7px;color:#e2e8f0">pad_tension_01.wav</div>
+            <div style="background:#0f0f1a;border:1px solid #2d2d50;border-radius:3px;padding:5px 7px;color:#e2e8f0">drone_strings.wav</div>
+            <div style="background:#0f0f1a;border:1px solid #2d2d50;border-radius:3px;padding:5px 7px;color:#e2e8f0">riser_bright.wav</div>
+            <div style="background:#0f0f1a;border:1px solid #2d2d50;border-radius:3px;padding:5px 7px;color:#e2e8f0">atmos_cold.wav</div>
+            <div style="background:#0f0f1a;border:1px solid #2d2d50;border-radius:3px;padding:5px 7px;color:#e2e8f0">synth_high.wav</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Browse + Filter Panel</h3>
+      <p>Filter panel on the left (click tags to narrow), results list on the right, search bar at the top. Good for exploration when you're not sure what you want — browse by energy, then narrow by mood.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hybrid-ui" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0f0f1a;border-radius:8px;padding:10px;font-size:10px;color:#a5b4fc">
+        <div style="background:#1e1e3a;border:1px solid #4f46e5;border-radius:6px;padding:8px 10px;margin-bottom:8px;color:#e2e8f0;font-size:11px">
+          🔍 high tension, no transients, mid-high range
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:10px;border:1px solid #4f46e5">energy: high ✕</span>
+          <span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:10px;border:1px solid #4f46e5">texture: smooth ✕</span>
+          <span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:10px;border:1px solid #4f46e5">mood: tension ✕</span>
+          <span style="background:#1e1e3a;color:#64748b;padding:2px 8px;border-radius:10px;border:1px dashed #3f3f6a">+ add tag</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="background:#161628;border:1px solid #2d2d50;border-radius:4px;padding:6px 10px;display:flex;justify-content:space-between">
+            <span style="color:#e2e8f0">pad_tension_01.wav</span>
+            <span style="color:#6366f1">▶ 0:04</span>
+          </div>
+          <div style="background:#161628;border:1px solid #2d2d50;border-radius:4px;padding:6px 10px;display:flex;justify-content:space-between">
+            <span style="color:#e2e8f0">drone_strings_dark.wav</span>
+            <span style="color:#6366f1">▶ 0:08</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Search + Active Tag Pills (Recommended)</h3>
+      <p>Natural language query at the top. The LLM parses it into tag pills shown below the search bar — you can remove or add individual pills. Results update live. Best of search and filter in one flow.</p>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,40 @@
+<h2>Desktop app framework</h2>
+<p class="subtitle">Windows + macOS target. All three options use a React web UI — the difference is how the backend is packaged.</p>
+
+<div class="options">
+  <div class="option" data-choice="electron-python" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Electron + Python sidecar</h3>
+      <p>Electron renders a React UI (same stack as inKubator). Python runs as a bundled sidecar process handling audio analysis (librosa/Essentia) and LLM calls. Proven pattern used by many audio tools.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Familiar React/Next.js stack</li><li>Large ecosystem, great devtools</li><li>Full OS integration (file dialogs, tray)</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Heavy install (~200MB+ with Python)</li><li>Two runtimes to manage</li><li>Slower startup</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="tauri-python" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Tauri + Python sidecar</h3>
+      <p>Tauri (Rust) renders a React UI in a lightweight native webview. Python runs as a sidecar for audio analysis. Much lighter than Electron — the Rust core handles file system, SQLite, and window management.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Tiny install (~10MB shell + Python)</li><li>Fast startup, low memory</li><li>React UI — familiar stack</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Rust required for core features</li><li>Sidecar IPC adds complexity</li><li>Smaller community than Electron</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="python-fastapi" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Python FastAPI + React (Recommended)</h3>
+      <p>Python (FastAPI) serves the React SPA locally. The app is one Python process — audio analysis, LLM calls, SQLite, and the UI server all in one. Packaged with PyInstaller. Opens a native webview (or browser tab) on launch. Simplest possible architecture.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>One language for all backend logic</li><li>Python-first audio ML ecosystem</li><li>No IPC complexity</li><li>Easy to extend and debug</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Large install (Python + deps)</li><li>Native feel requires extra work</li><li>PyInstaller bundling can be fiddly</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
