@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Sample } from '../api'
 import { recordPlay } from '../api'
 import TagPill from './TagPill'
@@ -69,16 +69,41 @@ export default function SampleRow({
   daysSincePlayed,
 }: SampleRowProps) {
   const [playing, setPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const audioUrl = `/api/samples/${sample.id}/audio`
 
   const handlePlay = async () => {
-    setPlaying(true)
-    try {
-      await recordPlay(sample.id)
-    } catch {
-      // fire-and-forget
+    if (audioRef.current) {
+      if (playing) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+        setPlaying(false)
+        return
+      }
+      setPlaying(true)
+      try {
+        await recordPlay(sample.id)
+      } catch {
+        // fire-and-forget
+      }
+      audioRef.current.play().catch(() => setPlaying(false))
     }
-    setTimeout(() => setPlaying(false), 300)
   }
+
+  // Reset playing state when audio ends
+  useEffect(() => {
+    const el = audioRef.current
+    if (!el) return
+    const onEnded = () => setPlaying(false)
+    const onError = () => setPlaying(false)
+    el.addEventListener('ended', onEnded)
+    el.addEventListener('error', onError)
+    return () => {
+      el.removeEventListener('ended', onEnded)
+      el.removeEventListener('error', onError)
+    }
+  }, [sample.id])
 
   const handleCopyPath = () => {
     navigator.clipboard.writeText(sample.path).catch(() => {})
@@ -88,7 +113,8 @@ export default function SampleRow({
   const breadcrumb = [sample.pack_source, sample.instrument_type, sample.instrument_subtype]
     .filter(Boolean)
     .join(' · ')
-  const topTags = sample.ai_tags.slice(0, 2)
+  const aiTags: string[] = Array.isArray(sample.ai_tags) ? sample.ai_tags : []
+  const topTags = aiTags.slice(0, 2)
   const neverPlayed = !sample.last_played_at && sample.play_count === 0
 
   return (
@@ -118,6 +144,7 @@ export default function SampleRow({
         >
           {playing ? '■' : '▶'}
         </button>
+        <audio ref={audioRef} src={audioUrl} preload="none" />
 
         {/* Filename + breadcrumb */}
         <button
@@ -209,7 +236,11 @@ export default function SampleRow({
           }}
         >
           <div style={{ flex: '1 1 200px', minWidth: 200 }}>
-            <WaveformPlaceholder />
+            <WaveformPlaceholder
+              spectralCentroid={sample.spectral_centroid}
+              rmsEnergy={sample.rms_energy}
+              zeroCrossingRate={sample.zero_crossing_rate}
+            />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 200, flexShrink: 0 }}>
@@ -217,7 +248,7 @@ export default function SampleRow({
               Your tags
             </div>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-              {sample.user_tags.map((tag) => (
+              {(Array.isArray(sample.user_tags) ? sample.user_tags : []).map((tag) => (
                 <TagPill
                   key={tag}
                   filter={{ dimension: '', value: tag }}

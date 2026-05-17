@@ -50,11 +50,14 @@ async def update_settings(body: dict):
     for key, value in body.items():
         await set_setting(key, str(value))
 
-    # If LLM-related settings were updated, reconfigure the client
-    if "llm_base_url" in body or "llm_api_key" in body or "llm_model" in body:
-        base_url = await get_setting("llm_base_url") or ""
-        api_key = await get_setting("llm_api_key") or ""
-        model = await get_setting("llm_model") or "deepseek-chat"
+    # If LLM-related settings were updated, reconfigure the client.
+    # Accept both naming conventions: frontend sends base_url/api_key/model,
+    # internal settings use llm_base_url/llm_api_key/llm_model.
+    llm_keys = {"base_url", "api_key", "model", "llm_base_url", "llm_api_key", "llm_model"}
+    if llm_keys & set(body.keys()):
+        base_url = (await get_setting("base_url") or await get_setting("llm_base_url") or "")
+        api_key = (await get_setting("api_key") or await get_setting("llm_api_key") or "")
+        model = (await get_setting("model") or await get_setting("llm_model") or "deepseek-chat")
         if base_url and api_key:
             await llm_client.configure(base_url, api_key, model)
 
@@ -65,6 +68,14 @@ async def update_settings(body: dict):
 @router.post("/settings/test", response_model=TestConnectionResponse)
 async def test_connection():
     """Test the LLM connection. Returns ok=true/false with details."""
+    # Auto-load config from DB if client not yet configured
+    if not llm_client._configured:
+        base_url = await get_setting("base_url") or await get_setting("llm_base_url") or ""
+        api_key = await get_setting("api_key") or await get_setting("llm_api_key") or ""
+        model = await get_setting("model") or await get_setting("llm_model") or "deepseek-chat"
+        if base_url and api_key:
+            await llm_client.configure(base_url, api_key, model)
+
     try:
         result = await llm_client.test_connection()
         return TestConnectionResponse(**result)

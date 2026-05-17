@@ -12,9 +12,9 @@ Routes are organised by domain:
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from sample_dna_tagger.db import init_db
 from sample_dna_tagger.routes import browse, samples, scan, search, settings
@@ -52,10 +52,29 @@ app.include_router(settings.router, prefix="/api")
 
 
 # ---------------------------------------------------------------------------
-# Static files — serve compiled React SPA
+# SPA fallback — serve index.html for any non-API route
 # ---------------------------------------------------------------------------
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+INDEX_HTML = FRONTEND_DIST / "index.html"
 
-if FRONTEND_DIST.is_dir():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="spa")
+
+@app.get("/{full_path:path}")
+async def spa_fallback(full_path: str, request: Request):
+    """Serve the React SPA for any route not caught by the API.
+
+    Returns index.html so client-side routing handles /search, /browse, etc.
+    Static assets (JS, CSS) are served directly if they exist on disk.
+    """
+    candidate = FRONTEND_DIST / full_path
+    if candidate.is_file():
+        return FileResponse(candidate)
+
+    # Fall back to index.html for SPA routing
+    if INDEX_HTML.is_file():
+        return FileResponse(
+            INDEX_HTML,
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+        )
+
+    return {"error": "Frontend not built — run 'npm run build' in frontend/"}  # type: ignore[return-value]

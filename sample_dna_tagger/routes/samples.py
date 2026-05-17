@@ -1,15 +1,19 @@
 """
 Sample routes — CRUD for individual samples.
 
-GET    /api/samples/{id}       — single sample detail
-PATCH  /api/samples/{id}       — update user_tags, rating
-POST   /api/samples/{id}/play  — record play event
-DELETE /api/samples/{id}       — remove sample from library
+GET    /api/samples/{id}        — single sample detail
+PATCH  /api/samples/{id}        — update user_tags, rating
+POST   /api/samples/{id}/play   — record play event
+DELETE /api/samples/{id}        — remove sample from library
+GET    /api/samples/{id}/audio  — stream the audio file
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from sample_dna_tagger.db import delete_sample, get_sample, record_play, update_sample
@@ -111,3 +115,34 @@ async def delete_one(sample_id: str):
     if not deleted:
         raise HTTPException(status_code=404, detail="Sample not found")
     return DeleteResponse(ok=True)
+
+
+@router.get("/samples/{sample_id}/audio")
+async def stream_audio(sample_id: str):
+    """Stream the audio file for a sample."""
+    sample = await get_sample(sample_id)
+    if sample is None:
+        raise HTTPException(status_code=404, detail="Sample not found")
+
+    file_path = Path(sample["path"])
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Audio file not found on disk")
+
+    # Determine media type from extension
+    ext = file_path.suffix.lower()
+    media_type = {
+        ".wav": "audio/wav",
+        ".mp3": "audio/mpeg",
+        ".flac": "audio/flac",
+        ".ogg": "audio/ogg",
+        ".m4a": "audio/mp4",
+        ".aiff": "audio/aiff",
+        ".aif": "audio/aiff",
+        ".opus": "audio/opus",
+    }.get(ext, "audio/wav")
+
+    return FileResponse(
+        path=str(file_path),
+        media_type=media_type,
+        filename=file_path.name,
+    )

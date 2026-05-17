@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import React, { Suspense, lazy } from 'react'
 import { Routes, Route, NavLink } from 'react-router-dom'
 import './App.css'
 
@@ -27,6 +27,10 @@ class ErrorBoundary extends React.Component<
     return { hasError: true, error }
   }
 
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ErrorBoundary caught:', error.message, info.componentStack)
+  }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -36,21 +40,38 @@ class ErrorBoundary extends React.Component<
               padding: 40,
               textAlign: 'center',
               color: 'var(--danger)',
+              maxWidth: 600,
+              margin: '0 auto',
             }}
           >
             <div style={{ fontSize: 14, marginBottom: 8 }}>Something went wrong</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--text-muted)',
+                marginBottom: 12,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}
+            >
               {this.state.error?.message ?? 'Unknown error'}
             </div>
+            <details style={{ fontSize: 10, color: 'var(--text-dim)', marginBottom: 12, textAlign: 'left' }}>
+              <summary>Stack trace</summary>
+              <pre style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>
+                {this.state.error?.stack ?? 'No stack available'}
+              </pre>
+            </details>
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
               style={{
-                marginTop: 16,
                 padding: '6px 16px',
                 background: 'var(--accent)',
                 color: 'white',
+                border: 'none',
                 borderRadius: 6,
                 fontSize: 12,
+                cursor: 'pointer',
               }}
             >
               Try again
@@ -62,8 +83,6 @@ class ErrorBoundary extends React.Component<
     return this.props.children
   }
 }
-
-import React from 'react'
 
 function App() {
   return (

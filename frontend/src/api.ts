@@ -12,6 +12,8 @@ export interface Sample {
   key: string | null
   rms_energy: number
   spectral_centroid: number
+  spectral_flatness: number
+  zero_crossing_rate: number
   instrument_category: string
   instrument_type: string
   instrument_subtype: string
@@ -98,6 +100,22 @@ export interface BrowseResult {
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
+/** Parse ai_tags and user_tags from JSON strings to arrays. */
+function normalizeSample(s: any): Sample {
+  return {
+    ...s,
+    ai_tags: typeof s.ai_tags === 'string' ? JSON.parse(s.ai_tags) : (s.ai_tags ?? []),
+    user_tags: typeof s.user_tags === 'string' ? JSON.parse(s.user_tags) : (s.user_tags ?? []),
+  }
+}
+
+function normalizeResult(res: any): SearchResult | BrowseResult {
+  return {
+    ...res,
+    results: (res.results ?? []).map(normalizeSample),
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -126,7 +144,7 @@ async function put<T>(path: string, body: unknown): Promise<T> {
 
 // ── API functions ───────────────────────────────────────────────────
 
-export function searchSamples(params: SearchParams): Promise<SearchResult> {
+export async function searchSamples(params: SearchParams): Promise<SearchResult> {
   const qs = new URLSearchParams()
   qs.set('query', params.query)
   if (params.filters?.length) {
@@ -134,14 +152,14 @@ export function searchSamples(params: SearchParams): Promise<SearchResult> {
   }
   if (params.page !== undefined) qs.set('page', String(params.page))
   if (params.per_page !== undefined) qs.set('per_page', String(params.per_page))
-  return request<SearchResult>(`/search?${qs.toString()}`)
+  return normalizeResult(await request<any>(`/search?${qs.toString()}`)) as SearchResult
 }
 
 export function parseSearchQuery(query: string): Promise<Filter[]> {
   return post<Filter[]>('/search/parse', { query })
 }
 
-export function browseSamples(params: BrowseParams): Promise<BrowseResult> {
+export async function browseSamples(params: BrowseParams): Promise<BrowseResult> {
   const qs = new URLSearchParams()
   if (params.category) qs.set('category', params.category)
   if (params.type) qs.set('type', params.type)
@@ -153,7 +171,7 @@ export function browseSamples(params: BrowseParams): Promise<BrowseResult> {
   if (params.sort) qs.set('sort', params.sort)
   if (params.page !== undefined) qs.set('page', String(params.page))
   if (params.per_page !== undefined) qs.set('per_page', String(params.per_page))
-  return request<BrowseResult>(`/browse?${qs.toString()}`)
+  return normalizeResult(await request<any>(`/browse?${qs.toString()}`)) as BrowseResult
 }
 
 export async function getCategories(): Promise<CategoryTree[]> {

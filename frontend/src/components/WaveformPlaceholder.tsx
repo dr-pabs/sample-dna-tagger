@@ -1,20 +1,55 @@
 /**
- * Inline SVG waveform placeholder — decorative only.
- * A composite sine wave with a playhead highlight.
+ * Waveform placeholder that generates a unique visual from the audio features.
+ *
+ * Uses spectral centroid, rms_energy, and zero_crossing_rate to vary
+ * amplitude, frequency, and noisiness of the composite wave.
  */
-export default function WaveformPlaceholder() {
+interface WaveformProps {
+  /** Hz — higher = more high-frequency detail */
+  spectralCentroid?: number | null
+  /** 0-1 — higher = louder-looking waveform */
+  rmsEnergy?: number | null
+  /** 0-1 — higher = more erratic / transient-heavy */
+  zeroCrossingRate?: number | null
+}
+
+export default function WaveformPlaceholder({
+  spectralCentroid,
+  rmsEnergy,
+  zeroCrossingRate,
+}: WaveformProps) {
   const width = 400
   const height = 36
   const midY = height / 2
+
+  // Normalise features to wave parameters
+  const centroid = spectralCentroid ?? 1000
+  const energy = rmsEnergy ?? 0.3
+  const zcr = zeroCrossingRate ?? 0.1
+
+  // High centroid → more high-freq detail (more harmonics)
+  const hiFreqMul = 1 + (centroid / 2000) * 5  // 1-6 range
+  // High energy → taller amplitude
+  const amplitude = 4 + energy * 16  // 4-20
+  // High ZCR → more noise / jaggedness (adds random jitter)
+  const jitter = zcr * 6  // 0-6
 
   const segments = 80
   let points = ''
   for (let i = 0; i <= segments; i++) {
     const x = (i / segments) * width
-    const t = (i / segments) * Math.PI * 4
-    const y = midY - Math.sin(t) * 10 - Math.sin(t * 3.7) * 4
-    points += `${i === 0 ? '' : ' '}${x.toFixed(1)},${y.toFixed(1)}`
+    const t = (i / segments) * Math.PI * 6
+    // Composite: base sine + high-freq detail from centroid
+    const y =
+      midY -
+      Math.sin(t) * amplitude * 0.6 -
+      Math.sin(t * hiFreqMul) * amplitude * 0.4 +
+      (jitter > 0 ? (Math.sin(i * 7.3 + zcr * 20) * jitter) : 0)
+    points += `${i === 0 ? '' : ' '}${x.toFixed(1)},${Math.max(2, Math.min(height - 2, y)).toFixed(1)}`
   }
+
+  // Playhead position: proportional to energy (just for visual variety)
+  const playheadPct = Math.min(60, 20 + energy * 40)
 
   return (
     <div
@@ -35,7 +70,7 @@ export default function WaveformPlaceholder() {
           left: 0,
           top: 0,
           bottom: 0,
-          width: '35%',
+          width: `${playheadPct}%`,
           background: 'rgba(99,102,241,0.15)',
         }}
       />
