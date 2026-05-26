@@ -10,6 +10,7 @@ Usage:
     pyinstaller SampleDNA.spec --clean --noconfirm
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -64,8 +65,8 @@ hiddenimports = [
     "fastapi.middleware.cors",
     "starlette",
     # ── pywebview ──
-    "pywebview",
     "webview",
+    "webview.platforms.cocoa",
     # ── Audio processing ──
     "librosa",
     "librosa.core",
@@ -94,6 +95,26 @@ hiddenimports = [
     "aiofiles",
     "dotenv",
     "python_multipart",
+    # ── App modules ──
+    "sample_dna_tagger",
+    "sample_dna_tagger.db",
+    "sample_dna_tagger.scanner",
+    "sample_dna_tagger.llm",
+    "sample_dna_tagger.server",
+    "sample_dna_tagger.routes",
+    "sample_dna_tagger.routes.browse",
+    "sample_dna_tagger.routes.samples",
+    "sample_dna_tagger.routes.scan",
+    "sample_dna_tagger.routes.search",
+    "sample_dna_tagger.routes.settings",
+    "sample_dna_tagger.waveform",
+    "sample_dna_tagger.watcher",
+    "watchdog",
+    "watchdog.observers",
+    "watchdog.events",
+    "PIL",
+    "PIL.Image",
+    "PIL.ImageDraw",
 ]
 
 # macOS-specific: pywebview needs the Cocoa bridge
@@ -105,6 +126,16 @@ if sys.platform == "darwin":
         "WebKit",
         "objc",
         "CoreFoundation",
+    ])
+
+# Windows-specific: pywebview needs the WinForms bridge
+if sys.platform == "win32":
+    hiddenimports.extend([
+        "pywebview.platforms.winforms",
+        "clr",
+        "System",
+        "System.Windows.Forms",
+        "System.Drawing",
     ])
 
 
@@ -208,6 +239,10 @@ coll = COLLECT(
 # ═══════════════════════════════════════════════════════════════════════════
 
 if sys.platform == "darwin":
+    # Allow codesign identity to be set via env var for CI/CD
+    codesign_identity = os.environ.get("CODESIGN_IDENTITY", None)
+    entitlements_file = "entitlements.plist" if os.path.exists("entitlements.plist") else None
+
     app = BUNDLE(
         coll,
         name="Sample DNA Tagger.app",
@@ -223,4 +258,6 @@ if sys.platform == "darwin":
             "LSMinimumSystemVersion": "11.0",
             "NSRequiresAquaSystemAppearance": False,
         },
+        codesign_identity=codesign_identity,
+        entitlements_file=entitlements_file,
     )
