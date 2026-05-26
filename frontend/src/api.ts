@@ -74,6 +74,7 @@ export interface ScanStatus {
 }
 
 export interface WatchFolder {
+  id: string
   path: string
   last_scanned: string | null
   file_count: number
@@ -229,6 +230,34 @@ export function updateSample(sampleId: string, data: Partial<Sample>): Promise<v
 
 export function startScan(): Promise<ScanStatus> {
   return post<ScanStatus>('/scan/start', {})
+}
+
+export async function addScanRoot(path: string): Promise<void> {
+  const res = await fetch(`${BASE}/scan/roots`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`${res.status} ${res.statusText}: ${body}`)
+  }
+}
+
+export async function removeScanRoot(rootId: string): Promise<void> {
+  const res = await fetch(`${BASE}/scan/roots/${rootId}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`${res.status} ${res.statusText}: ${body}`)
+  }
+}
+
+export async function rescanRoot(rootId: string): Promise<void> {
+  const res = await fetch(`${BASE}/scan/roots/${rootId}/rescan`, { method: 'POST' })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`${res.status} ${res.statusText}: ${body}`)
+  }
 }
 
 export async function deleteSample(sampleId: string): Promise<void> {

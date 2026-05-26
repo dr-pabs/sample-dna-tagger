@@ -283,6 +283,7 @@ export default function SampleRow({
         >
           <div style={{ flex: '1 1 200px', minWidth: 200 }}>
             <WaveformPlaceholder
+              sampleId={sample.id}
               spectralCentroid={sample.spectral_centroid}
               rmsEnergy={sample.rms_energy}
               zeroCrossingRate={sample.zero_crossing_rate}

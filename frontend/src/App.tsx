@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy, useState, useEffect } from 'react'
 import { Routes, Route, NavLink } from 'react-router-dom'
 import { AudioManagerProvider } from './components/AudioManager'
 import './App.css'
@@ -6,6 +6,78 @@ import './App.css'
 const Search = lazy(() => import('./pages/Search'))
 const Browse = lazy(() => import('./pages/Browse'))
 const Settings = lazy(() => import('./pages/Settings'))
+
+const GITHUB_RELEASES_API = 'https://api.github.com/repos/dr-pabs/sample-dna-tagger/releases/latest';
+
+function UpdateBanner() {
+  const [update, setUpdate] = useState<{ available: boolean; url: string; version: string } | null>(null)
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const [localRes, remoteRes] = await Promise.all([
+          fetch('/api/version').then(r => r.json()).catch(() => ({ version: '0.1.0' })),
+          fetch(GITHUB_RELEASES_API, { headers: { Accept: 'application/vnd.github+json' } })
+            .then(r => r.ok ? r.json() : null)
+            .catch(() => null),
+        ])
+        if (!remoteRes || !remoteRes.tag_name) return
+        const local = localRes.version || '0.1.0'
+        const remote = remoteRes.tag_name.replace(/^v/, '')
+        if (remote > local) {
+          setUpdate({ available: true, url: remoteRes.html_url, version: remote })
+        }
+      } catch {
+        // silently ignore network errors
+      }
+    }
+    check()
+  }, [])
+
+  if (!update) return null
+
+  return (
+    <div
+      style={{
+        background: 'rgba(99,102,241,0.15)',
+        borderBottom: '1px solid var(--accent)',
+        padding: '6px 20px',
+        fontSize: 12,
+        color: 'var(--accent)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}
+    >
+      <span>🎉</span>
+      <span>
+        <strong>Update available:</strong> v{update.version} is ready.
+      </span>
+      <a
+        href={update.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+      >
+        Download
+      </a>
+      <button
+        onClick={() => setUpdate(null)}
+        style={{
+          marginLeft: 'auto',
+          background: 'none',
+          border: 'none',
+          color: 'var(--text-dim)',
+          cursor: 'pointer',
+          fontSize: 12,
+        }}
+        aria-label="Dismiss update"
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
 
 function PageFallback() {
   return (
@@ -88,6 +160,7 @@ class ErrorBoundary extends React.Component<
 function App() {
   return (
     <div className="app">
+      <UpdateBanner />
       <nav className="top-nav" aria-label="Main navigation">
         <div className="nav-brand">Sample DNA</div>
         <NavLink to="/search" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>

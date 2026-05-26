@@ -5,6 +5,9 @@ import {
   updateSettings,
   testLLMConnection,
   startScan,
+  addScanRoot,
+  removeScanRoot,
+  rescanRoot,
 } from '../api'
 
 // ── Provider presets ────────────────────────────────────────────────
@@ -80,13 +83,36 @@ export default function Settings() {
   const handleAddFolder = async () => {
     const path = newFolderPath.trim()
     if (!path) return
-    await fetch('/api/scan/roots', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path }),
-    })
-    setNewFolderPath('')
-    window.location.reload()
+    try {
+      await addScanRoot(path)
+      setNewFolderPath('')
+      // Refresh settings to show new folder
+      const refreshed = await getSettings()
+      setData(refreshed)
+    } catch (err) {
+      setError((err as Error).message)
+    }
+  }
+
+  const handleRemoveFolder = async (rootId: string) => {
+    if (!confirm('Remove this watch folder? Its samples will be deleted from the library.')) return
+    try {
+      await removeScanRoot(rootId)
+      const refreshed = await getSettings()
+      setData(refreshed)
+    } catch (err) {
+      setError((err as Error).message)
+    }
+  }
+
+  const handleRescanFolder = async (rootId: string) => {
+    try {
+      await rescanRoot(rootId)
+      const refreshed = await getSettings()
+      setData(refreshed)
+    } catch (err) {
+      setError((err as Error).message)
+    }
   }
 
   useEffect(() => {
@@ -246,7 +272,7 @@ export default function Settings() {
 
               <div style={{ marginBottom: 10 }}>
                 {(data?.watch_folders ?? []).map((wf) => (
-                  <div key={wf.path} style={WATCH_ROW}>
+                  <div key={wf.id} style={WATCH_ROW}>
                     <span style={{ color: 'var(--accent)', fontSize: 14 }} aria-hidden="true">📁</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -258,13 +284,15 @@ export default function Settings() {
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                       <button
-                        style={{ color: 'var(--accent)', cursor: 'pointer', fontSize: 11 }}
+                        style={{ color: 'var(--accent)', cursor: 'pointer', fontSize: 11, background: 'none', border: 'none' }}
+                        onClick={() => handleRescanFolder(wf.id)}
                         aria-label={`Rescan ${wf.path}`}
                       >
                         Rescan
                       </button>
                       <button
-                        style={{ color: 'var(--danger)', cursor: 'pointer', fontSize: 11 }}
+                        style={{ color: 'var(--danger)', cursor: 'pointer', fontSize: 11, background: 'none', border: 'none' }}
+                        onClick={() => handleRemoveFolder(wf.id)}
                         aria-label={`Remove ${wf.path}`}
                       >
                         Remove
