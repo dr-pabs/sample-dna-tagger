@@ -4,6 +4,8 @@
 
 A desktop app for music producers that analyses your sample library, generates expressive semantic tags via AI, and lets you search with natural language — "dark, tense, no transients" — or browse by category, pack, and recency.
 
+**v0.2 highlights**: real-time file-system watcher, waveform generation, auto-update notifications, and macOS code-signing support.
+
 ## Quick Start
 
 ### Prerequisites
@@ -112,6 +114,7 @@ sample-dna-tagger/
 | `GET` | `/api/samples/{id}` | Single sample detail |
 | `PATCH` | `/api/samples/{id}` | Update user tags, rating |
 | `POST` | `/api/samples/{id}/play` | Record play event |
+| `GET` | `/api/samples/{id}/waveform` | Waveform PNG |
 | `DELETE`| `/api/samples/{id}` | Remove from library |
 | `GET` | `/api/browse/categories` | Category tree with counts |
 | `GET` | `/api/browse/packs` | Pack list with counts |
@@ -125,6 +128,7 @@ sample-dna-tagger/
 | `POST` | `/api/scan/roots/{id}/rescan` | Rescan single folder |
 | `GET` | `/api/settings` | Get all settings |
 | `PUT` | `/api/settings` | Update settings |
+| `GET` | `/api/version` | App version (for update checks) |
 | `POST` | `/api/settings/test` | Test LLM connection |
 
 ## Configuration
@@ -134,18 +138,25 @@ Settings are stored in the SQLite database and editable from the Settings screen
 - **Library**: Watch folder paths, scan status
 - **AI Provider**: Base URL, API key, model name. Supports DeepSeek, OpenAI, Kimi, Ollama, and any OpenAI-compatible endpoint.
 - **Database path**: Override with `SAMPLE_DNA_DB` environment variable (default: `~/.sample-dna-tagger/library.db`)
+- **Waveform cache**: Override with `SAMPLE_DNA_WAVEFORMS` environment variable (default: `~/.sample-dna-tagger/waveforms/`) per sample ID
 
 ## Building for Distribution
 
 ```bash
-# macOS
+# macOS (unsigned)
 chmod +x build-macos.sh
 ./build-macos.sh
 # Output: dist/Sample DNA Tagger.app
 
+# macOS (signed + notarized — requires Apple Developer ID)
+export CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+chmod +x sign-and-notarize.sh
+./sign-and-notarize.sh
+# Output: dist/Sample DNA Tagger.dmg
+
 # Windows
 build-windows.bat
-# Output: dist\Sample DNA Tagger.exe
+# Output: dist\Sample DNA Tagger\Sample DNA Tagger.exe
 ```
 
 Uses PyInstaller to bundle Python runtime, all dependencies, and the compiled React SPA into a single `.app` (macOS) or `.exe` (Windows).
@@ -158,6 +169,9 @@ See `adr/` for Architecture Decision Records:
 - [ADR-002](adr/002-python-fastapi-pywebview.md) — Python FastAPI + React SPA + pywebview
 - [ADR-003](adr/003-search-first-tag-pills.md) — Search-first UI with LLM-parsed tag pills
 - [ADR-004](adr/004-sqlite-fts5.md) — SQLite with FTS5 full-text search
+- [ADR-005](adr/005-file-system-watcher.md) — File-system watcher (watchdog)
+- [ADR-006](adr/006-waveform-generation.md) — Waveform generation (Pillow)
+- [ADR-007](adr/007-auto-updater.md) — Auto-updater (GitHub Releases API)
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the complete end-to-end system design.
 

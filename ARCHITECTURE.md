@@ -45,9 +45,21 @@ Sample DNA Tagger is a single-user desktop application for music producers. It s
 
 ## Component Architecture
 
-### 1. Scanner Engine (`scanner.py`)
+### 1. File-System Watcher (`watcher.py`)
 
-**Purpose**: Walk watch folders, run local audio analysis, classify instruments, delegate to LLM for tagging.
+**Purpose**: Monitor scan roots for file creation, modification, and deletion in real time.
+
+**Thread model**: Runs in a background `watchdog.observers.Observer` thread. Bridges to asyncio via `asyncio.run_coroutine_threadsafe()`.
+
+**Key behaviors**:
+- **Create/modify** → debounced (2s) background rescan of the affected root
+- **Delete file** → immediate `DELETE FROM samples WHERE path = ?`
+- **Delete directory** → removes all samples under that path recursively
+- **Add/remove root** → starts/stops the per-root `Observer` schedule dynamically
+
+### 2. Scanner Engine (`scanner.py`)
+
+**Purpose**: Walk watch folders, run local audio analysis, classify instruments, delegate to LLM for tagging, generate waveform PNGs.
 
 **Thread model**: Runs in a background `ThreadPoolExecutor`. CPU-bound audio analysis (librosa) is offloaded to worker threads via `loop.run_in_executor()`. Database writes are serialised through a module-level `asyncio.Lock`.
 
@@ -93,7 +105,7 @@ Mark scan_status as idle
 
 **Pack detection**: The top-level folder under the scan root containing the file is used as `pack_source`.
 
-### 2. LLM Layer (`llm.py`)
+### 3. LLM Layer (`llm.py`)
 
 **Purpose**: Send structured audio features to an OpenAI-compatible endpoint and return expressive semantic tags. Also parses natural-language search queries into structured filters.
 
@@ -114,7 +126,7 @@ Mark scan_status as idle
 
 **System prompts**: Two distinct prompts — one for tag generation (with few-shot examples for Kick, Pad, Hi-hat), one for search query parsing. Both enforce JSON-only responses with no markdown.
 
-### 3. Database Layer (`db.py`)
+### 4. Database Layer (`db.py`)
 
 **Schema**: 6 tables
 
@@ -138,15 +150,16 @@ Mark scan_status as idle
 - `browse_samples(category, type, pack, quick_filter, sort, limit, offset)`
 - Plus full CRUD for scan_roots, scan_errors, scan_status, settings
 
-### 4. REST API (5 route modules)
+### 5. REST API (6 route modules)
 
 | Module | Routes | Description |
 |--------|--------|-------------|
 | `search.py` | POST `/parse`, GET `/` | LLM query parsing + filtered search |
-| `samples.py` | GET/PATCH/DELETE `/{id}`, POST `/{id}/play` | Sample CRUD + play tracking |
+| `samples.py` | GET/PATCH/DELETE `/{id}`, POST `/{id}/play`, GET `/{id}/waveform` | Sample CRUD + play tracking + waveform PNG |
 | `browse.py` | GET `/categories`, `/packs`, `/quick-filters`, `/` | Browse tree + filtered listing |
 | `scan.py` | GET `/status`, POST `/start`, GET/POST/DELETE `/roots`, POST `/roots/{id}/rescan` | Scan control |
 | `settings.py` | GET `/`, PUT `/`, POST `/test` | Configuration + LLM test |
+| `version.py` | GET `/` | App version for update checks |
 
 All handlers are `async def`. Request/response bodies use Pydantic models. Database access goes through the `db` module's connection pooling.
 
@@ -156,7 +169,7 @@ All handlers are `async def`. Request/response bodies use Pydantic models. Datab
 3. API routes mounted under `/api`
 4. React SPA mounted as static files at `/` (production) or proxied via Vite (dev)
 
-### 5. React Frontend
+### 6. React Frontend
 
 **Stack**: React 18 + TypeScript + Vite + React Router v6
 
@@ -188,16 +201,18 @@ App
     └── Settings
         ├── Left nav (Library | AI Provider | About)
         └── Content area
-            ├── Library: watch folders + scan status
+            ├── Library: watch folders + scan status + rescan/remove
             ├── AI Provider: endpoint config + test
             └── About: version
+
+**Update banner**: Checks GitHub Releases API on startup. Shows a dismissible banner with download link when a newer version is available.
 ```
 
 **Styling**: Dark theme with CSS custom properties. Matches the design mockups in `design spec/`. AI tags are indigo; user tags are green.
 
 **API client** (`api.ts`): Typed `fetch()` wrapper. No external dependencies. All endpoints return typed interfaces.
 
-### 6. Launch & Packaging (`launch.py`)
+### 7. Launch & Packaging (`launch.py`)
 
 **Startup sequence**:
 1. Find a free TCP port
