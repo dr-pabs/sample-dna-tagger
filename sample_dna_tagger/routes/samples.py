@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from sample_dna_tagger.db import delete_sample, get_sample, record_play, update_sample
+from sample_dna_tagger.waveform import delete_waveform, get_waveform_path
 
 router = APIRouter(tags=["samples"])
 
@@ -110,11 +111,30 @@ async def play_one(sample_id: str):
 
 @router.delete("/samples/{sample_id}", response_model=DeleteResponse)
 async def delete_one(sample_id: str):
-    """Remove a sample from the library."""
+    """Remove a sample from the library and delete its waveform cache."""
     deleted = await delete_sample(sample_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Sample not found")
+    delete_waveform(sample_id)
     return DeleteResponse(ok=True)
+
+
+@router.get("/samples/{sample_id}/waveform")
+async def get_waveform(sample_id: str):
+    """Serve the cached waveform PNG for a sample."""
+    sample = await get_sample(sample_id)
+    if sample is None:
+        raise HTTPException(status_code=404, detail="Sample not found")
+
+    wf_path = get_waveform_path(sample_id)
+    if wf_path is None:
+        raise HTTPException(status_code=404, detail="Waveform not generated yet")
+
+    return FileResponse(
+        path=str(wf_path),
+        media_type="image/png",
+        filename=f"{sample_id}.png",
+    )
 
 
 @router.get("/samples/{sample_id}/audio")

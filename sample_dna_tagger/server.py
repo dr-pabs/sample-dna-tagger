@@ -10,16 +10,42 @@ Routes are organised by domain:
 - /               — static React SPA (production) or proxy (dev)
 """
 
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from sample_dna_tagger.db import init_db
+from sample_dna_tagger.db import init_db, list_scan_roots
 from sample_dna_tagger.routes import browse, samples, scan, search, settings
+from sample_dna_tagger.scanner import scanner
+from sample_dna_tagger.watcher import watcher
 
-app = FastAPI(title="Sample DNA Tagger", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan — initialise database and file-system watcher."""
+    await init_db()
+
+    # Start file-system watcher
+    watcher.set_loop(asyncio.get_event_loop())
+    watcher.start()
+
+    # Watch all existing scan roots
+    roots = await list_scan_roots()
+    for r in roots:
+        if r.get("enabled", 1):
+            watcher.add_root(r["id"], r["path"], scanner)
+
+    yield
+
+    # Shutdown
+    watcher.stop()
+
+
+app = FastAPI(title="Sample DNA Tagger", version="0.1.0", lifespan=lifespan)
 
 # CORS — allow pywebview (localhost on any port) and dev server
 app.add_middleware(
@@ -29,11 +55,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    await init_db()
 
 
 # ---------------------------------------------------------------------------

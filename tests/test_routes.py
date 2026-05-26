@@ -176,16 +176,30 @@ async def test_scan_roots_add(client, tmp_path):
 async def test_get_settings(client):
     resp = await client.get("/api/settings")
     assert resp.status_code == 200
-    assert isinstance(resp.json(), dict)
+    data = resp.json()
+    assert isinstance(data, dict)
+    # Aggregated response shape
+    assert "watch_folders" in data
+    assert "scan_status" in data
+    assert "provider" in data
+    assert "model" in data
+    assert "base_url" in data
+    assert "api_key" in data
 
 
 @pytest.mark.asyncio
 async def test_update_settings(client):
-    resp = await client.put("/api/settings", json={"test_key": "test_val"})
+    resp = await client.put(
+        "/api/settings",
+        json={"provider": "TestProvider", "base_url": "http://test", "api_key": "secret", "model": "test-model"},
+    )
     assert resp.status_code == 200
-    # Verify persisted
-    resp2 = await client.get("/api/settings")
-    assert resp2.json().get("test_key") == "test_val"
+    data = resp.json()
+    # Verify aggregated response contains updated values
+    assert data["provider"] == "TestProvider"
+    assert data["base_url"] == "http://test"
+    assert data["api_key"] == "secret"
+    assert data["model"] == "test-model"
 
 
 @pytest.mark.asyncio

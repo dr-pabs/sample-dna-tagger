@@ -531,13 +531,12 @@ class Scanner:
                 except Exception as exc:
                     logger.warning("LLM tagging failed for %s: %s", file_path, exc)
 
-                # Build the features dict we'll pass to the LLM next time
-                # (only analysis features, not LLM output)
-                analysis_features = {
-                    k: v
-                    for k, v in features.items()
-                    if k not in ("instrument_category", "_error")
-                }
+                # Generate waveform PNG (cached, lightweight)
+                try:
+                    from sample_dna_tagger.waveform import generate_waveform
+                    generate_waveform(file_path, sample_id)
+                except Exception:
+                    logger.warning("Waveform generation failed for %s", file_path, exc_info=True)
 
                 # Determine whether to insert or update
                 cursor = await conn.execute(
