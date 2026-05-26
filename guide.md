@@ -81,11 +81,22 @@ cd ..
 
 ### 4. Run in development mode
 
-```bash
-# Terminal 1 — backend
-python launch.py --dev
+Make sure the virtual environment is active first:
 
-# Terminal 2 — frontend (optional, launch.py --dev opens a window)
+```bash
+source .venv/bin/activate  # macOS/Linux
+# or: .venv\Scripts\activate  # Windows
+```
+
+Then in Terminal 1 — backend:
+
+```bash
+python launch.py --dev
+```
+
+In Terminal 2 — frontend (optional, `launch.py --dev` already opens a native window):
+
+```bash
 cd frontend
 npm run dev
 ```
